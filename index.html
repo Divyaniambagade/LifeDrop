@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Blood Donor Finder</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- Navigation Bar -->
+    <header>
+        <div class="logo">🩸 BloodConnect</div>
+
+        <nav>
+            <a href="#home">Home</a>
+            <a href="#find">Find Donor</a>
+            <a href="#donate">Become a Donor</a>
+            <a href="#request">Request Blood</a>
+        </nav>
+    </header>
+
+
+    <!-- Home Section -->
+    <section id="home" class="hero">
+
+        <div class="hero-content">
+
+            <h1>Donate Blood, Save Lives</h1>
+
+            <p>
+                Find nearby blood donors quickly during emergencies.
+            </p>
+
+            <div class="buttons">
+                <a href="#find" class="btn">Find a Donor</a>
+                <a href="#donate" class="btn secondary">
+                    Become a Donor
+                </a>
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- Find Donor Section -->
+    <section id="find" class="find-section">
+
+        <h2>Find a Blood Donor</h2>
+
+        <p>
+            Search for available donors according to blood group and location.
+        </p>
+
+        <div class="search-box">
+
+            <label>Blood Group</label>
+
+            <select id="bloodGroup">
+                <option value="">Select Blood Group</option>
+                <option>A+</option>
+                <option>A-</option>
+                <option>B+</option>
+                <option>B-</option>
+                <option>AB+</option>
+                <option>AB-</option>
+                <option>O+</option>
+                <option>O-</option>
+            </select>
+
+
+            <label>Location</label>
+
+            <input
+                type="text"
+                id="location"
+                placeholder="Enter your city"
+            >
+
+            <button onclick="findDonor()">
+                Find Nearby Donors
+            </button>
+
+        </div>
+
+        <div id="result"></div>
+
+    </section>
+
+
+    <!-- Become Donor -->
+    <section id="donate" class="donate-section">
+
+        <h2>Become a Blood Donor</h2>
+
+        <p>
+            Register yourself as a donor and help someone in need.
+        </p>
+
+        <button>Register as Donor</button>
+
+    </section>
+
+
+    <!-- Blood Request -->
+    <section id="request" class="request-section">
+
+        <h2>Emergency Blood Request</h2>
+
+        <p>
+            Need blood urgently? Submit a blood request.
+        </p>
+
+        <button>Request Blood</button>
+
+    </section>
+
+
+    <!-- Footer -->
+    <footer>
+
+        <p>
+            © 2026 BloodConnect | Blood Donor Finder
+        </p>
+
+    </footer>
+
+
+    <script src="script.js"></script>
+
+</body>
+</html>

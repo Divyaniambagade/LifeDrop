@@ -1,0 +1,188 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background: #fff5f5;
+    color: #333;
+}
+
+
+/* Navigation */
+
+header {
+    background: #b71c1c;
+    color: white;
+
+    padding: 18px 8%;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    font-size: 24px;
+    font-weight: bold;
+}
+
+nav a {
+    color: white;
+    text-decoration: none;
+    margin-left: 25px;
+}
+
+
+/* Hero */
+
+.hero {
+    min-height: 500px;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    text-align: center;
+
+    background: #ffe5e5;
+}
+
+.hero h1 {
+    font-size: 50px;
+    color: #b71c1c;
+}
+
+.hero p {
+    font-size: 20px;
+    margin: 20px 0;
+}
+
+.buttons {
+    margin-top: 30px;
+}
+
+.btn {
+    display: inline-block;
+
+    background: #d32f2f;
+    color: white;
+
+    padding: 14px 25px;
+
+    border-radius: 8px;
+
+    text-decoration: none;
+
+    margin: 5px;
+}
+
+.secondary {
+    background: white;
+    color: #d32f2f;
+    border: 2px solid #d32f2f;
+}
+
+
+/* Sections */
+
+section {
+    padding: 70px 8%;
+    text-align: center;
+}
+
+section h2 {
+    font-size: 35px;
+    color: #b71c1c;
+    margin-bottom: 15px;
+}
+
+
+/* Search Box */
+
+.search-box {
+    max-width: 500px;
+
+    margin: 30px auto;
+
+    background: white;
+
+    padding: 30px;
+
+    border-radius: 12px;
+
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+
+    text-align: left;
+}
+
+.search-box label {
+    display: block;
+
+    margin-top: 15px;
+
+    font-weight: bold;
+}
+
+.search-box select,
+.search-box input {
+
+    width: 100%;
+
+    padding: 13px;
+
+    margin-top: 8px;
+
+    border: 1px solid #ccc;
+
+    border-radius: 6px;
+}
+
+.search-box button,
+.donate-section button,
+.request-section button {
+
+    width: 100%;
+
+    padding: 14px;
+
+    margin-top: 20px;
+
+    border: none;
+
+    border-radius: 7px;
+
+    background: #d32f2f;
+
+    color: white;
+
+    font-size: 16px;
+
+    cursor: pointer;
+}
+
+
+/* Sections */
+
+.donate-section {
+    background: white;
+}
+
+.request-section {
+    background: #ffe5e5;
+}
+
+
+/* Footer */
+
+footer {
+    background: #7f0000;
+
+    color: white;
+
+    text-align: center;
+
+    padding: 25px;
+}
