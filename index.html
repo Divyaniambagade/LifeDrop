@@ -1,136 +1,298 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>Blood Donor Finder</title>
-
-    <link rel="stylesheet" href="style.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LifeDrop – Blood donation network</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
 </head>
+<body id="top">
 
-<body>
+<header class="site">
+  <div class="wrap bar">
+    <a class="brand" href="#top" aria-label="LifeDrop home">
+      <svg viewBox="0 0 200 250" aria-hidden="true"><path d="M100 8C100 8 24 105 24 165A76 76 0 0 0 176 165C176 105 100 8 100 8Z" fill="var(--blood)"/></svg>
+      LifeDrop
+    </a>
+    <button class="btn ghost sm menu" id="menuBtn" aria-expanded="false" aria-controls="nav">Menu</button>
+    <nav id="nav" aria-label="Main">
+      <a href="#available">Available blood</a>
+      <a href="#donors">Find donors</a>
+      <a href="#requests">Requests</a>
+      <a href="#register">Become a donor</a>
+      <a href="#save-life">Save a life</a>
+    </nav>
+    <button class="btn ghost sm" id="themeBtn" type="button">Dark mode</button>
+  </div>
+</header>
 
-    <!-- Navigation Bar -->
-    <header>
-        <div class="logo">🩸 BloodConnect</div>
+<main>
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <h1>Blood can’t be made. It can only be given.</h1>
+      <p class="lead">Search donors by blood group and city, post an urgent request, or register to donate. Everything you add stays in this browser.</p>
+      <div class="cta">
+        <a class="btn primary" href="#donors">Find a donor</a>
+        <a class="btn ghost" href="#register">Become a donor</a>
+      </div>
+    </div>
 
-        <nav>
-            <a href="#home">Home</a>
-            <a href="#find">Find Donor</a>
-            <a href="#donate">Become a Donor</a>
-            <a href="#request">Request Blood</a>
-        </nav>
-    </header>
+    <div class="picker">
+      <h2>Who can you give to, and receive from?</h2>
+      <div class="chips" id="heroChips" role="group" aria-label="Choose your blood group"></div>
+      <div class="picker-body">
+        <svg class="drop" id="dropSvg" viewBox="0 0 200 250" role="img" aria-label="Selected blood group">
+          <defs><clipPath id="dropClip"><path d="M100 8C100 8 24 105 24 165A76 76 0 0 0 176 165C176 105 100 8 100 8Z"/></clipPath></defs>
+          <path class="drop-bg" d="M100 8C100 8 24 105 24 165A76 76 0 0 0 176 165C176 105 100 8 100 8Z"/>
+          <g clip-path="url(#dropClip)"><rect class="fill" x="0" y="0" width="200" height="250"/></g>
+          <text class="drop-text" id="dropText" x="100" y="182" text-anchor="middle">O+</text>
+        </svg>
+        <dl class="rel" style="margin:0">
+          <dt>You can give to</dt><dd id="giveList"></dd>
+          <dt>You can receive from</dt><dd id="recvList"></dd>
+        </dl>
+      </div>
+      <p class="rel-note" id="compatNote"></p>
+      <button class="btn primary" id="heroFind" type="button">Find donors for this group</button>
+    </div>
+  </div>
+</section>
 
+<div class="stats" aria-label="Live totals">
+  <div class="wrap">
+    <div class="stat"><b id="sDonors">0</b><span>Registered donors</span></div>
+    <div class="stat"><b id="sReady">0</b><span>Ready to donate today</span></div>
+    <div class="stat"><b id="sOpen">0</b><span>Open blood requests</span></div>
+    <div class="stat"><b id="sUnits">0</b><span>Units in blood-bank stock</span></div>
+  </div>
+</div>
 
-    <!-- Home Section -->
-    <section id="home" class="hero">
+<section class="block" id="available">
+  <div class="wrap">
+    <div class="head">
+      <h2>Blood available now</h2>
+      <p>Units in blood-bank stock and donors ready today, for each blood group. Select a group to see its donors. Stock figures are sample data.</p>
+    </div>
+    <div class="stock-grid" id="stockGrid"></div>
+  </div>
+</section>
 
-        <div class="hero-content">
+<section class="block alt" id="donors">
+  <div class="wrap">
+    <div class="head">
+      <h2>Find a donor</h2>
+      <p>Call or message a donor directly, or open their area on the map. Please confirm details before travelling.</p>
+    </div>
+    <div class="filters">
+      <div>
+        <label for="fGroup">Blood group</label>
+        <select id="fGroup"><option value="">Any blood group</option></select>
+      </div>
+      <div class="grow">
+        <label for="fCity">City or area</label>
+        <input type="text" id="fCity" placeholder="For example, Pune">
+      </div>
+      <label class="check"><input type="checkbox" id="fReady" checked> Ready to donate today</label>
+      <label class="check"><input type="checkbox" id="fCompat"> Include compatible groups</label>
+    </div>
+    <p class="count" id="donorCount" aria-live="polite"></p>
+    <div class="list" id="donorList"></div>
+  </div>
+</section>
 
-            <h1>Donate Blood, Save Lives</h1>
-
-            <p>
-                Find nearby blood donors quickly during emergencies.
-            </p>
-
-            <div class="buttons">
-                <a href="#find" class="btn">Find a Donor</a>
-                <a href="#donate" class="btn secondary">
-                    Become a Donor
-                </a>
-            </div>
-
+<section class="block" id="requests">
+  <div class="wrap">
+    <div class="head">
+      <h2>Urgent blood requests</h2>
+      <p>Post a request for a patient, or offer to donate to one that’s open.</p>
+    </div>
+    <div class="split">
+      <form class="card-form" id="reqForm" novalidate>
+        <h3 style="font-size:1.25rem">Request blood</h3>
+        <div>
+          <label for="rqPatient">Patient name</label>
+          <input type="text" id="rqPatient" name="patient" autocomplete="off">
+          <p class="err" data-err="patient"></p>
         </div>
+        <div class="row2">
+          <div>
+            <label for="rqGroup">Blood group needed</label>
+            <select id="rqGroup" name="group"></select>
+            <p class="err" data-err="group"></p>
+          </div>
+          <div>
+            <label for="rqUnits">Units needed</label>
+            <input type="number" id="rqUnits" name="units" min="1" max="20" value="1">
+            <p class="err" data-err="units"></p>
+          </div>
+        </div>
+        <div>
+          <label for="rqHospital">Hospital</label>
+          <input type="text" id="rqHospital" name="hospital" autocomplete="off">
+          <p class="err" data-err="hospital"></p>
+        </div>
+        <div class="row2">
+          <div>
+            <label for="rqCity">City</label>
+            <input type="text" id="rqCity" name="city" autocomplete="off">
+            <p class="err" data-err="city"></p>
+          </div>
+          <div>
+            <label for="rqPhone">Contact number</label>
+            <input type="tel" id="rqPhone" name="phone" autocomplete="off">
+            <p class="err" data-err="phone"></p>
+          </div>
+        </div>
+        <div>
+          <label for="rqUrgency">How soon is it needed?</label>
+          <select id="rqUrgency" name="urgency">
+            <option value="critical">Immediately</option>
+            <option value="today" selected>Today</option>
+            <option value="week">Within a week</option>
+          </select>
+        </div>
+        <div>
+          <label for="rqNote">Note (optional)</label>
+          <input type="text" id="rqNote" name="note" placeholder="For example, surgery at 6 pm" autocomplete="off">
+        </div>
+        <button class="btn primary" type="submit">Post request</button>
+      </form>
+      <div>
+        <div class="reqs" id="reqList"></div>
+      </div>
+    </div>
+  </div>
+</section>
 
-    </section>
-
-
-    <!-- Find Donor Section -->
-    <section id="find" class="find-section">
-
-        <h2>Find a Blood Donor</h2>
-
-        <p>
-            Search for available donors according to blood group and location.
-        </p>
-
-        <div class="search-box">
-
-            <label>Blood Group</label>
-
-            <select id="bloodGroup">
-                <option value="">Select Blood Group</option>
-                <option>A+</option>
-                <option>A-</option>
-                <option>B+</option>
-                <option>B-</option>
-                <option>AB+</option>
-                <option>AB-</option>
-                <option>O+</option>
-                <option>O-</option>
+<section class="block alt" id="register">
+  <div class="wrap">
+    <div class="head">
+      <h2>Become a donor</h2>
+      <p>Add your blood group, contact and location so people nearby can reach you when it matters.</p>
+    </div>
+    <div class="split">
+      <form class="card-form" id="regForm" novalidate>
+        <div>
+          <label for="dName">Full name</label>
+          <input type="text" id="dName" name="name" autocomplete="name">
+          <p class="err" data-err="name"></p>
+        </div>
+        <div class="row2">
+          <div>
+            <label for="dAge">Age</label>
+            <input type="number" id="dAge" name="age" min="18" max="65" inputmode="numeric">
+            <p class="err" data-err="age"></p>
+          </div>
+          <div>
+            <label for="dGender">Gender</label>
+            <select id="dGender" name="gender">
+              <option>Female</option><option>Male</option><option>Other</option>
             </select>
-
-
-            <label>Location</label>
-
-            <input
-                type="text"
-                id="location"
-                placeholder="Enter your city"
-            >
-
-            <button onclick="findDonor()">
-                Find Nearby Donors
-            </button>
-
+          </div>
         </div>
+        <div class="row2">
+          <div>
+            <label for="dGroup">Blood group</label>
+            <select id="dGroup" name="group"></select>
+            <p class="err" data-err="group"></p>
+          </div>
+          <div>
+            <label for="dPhone">Phone number</label>
+            <input type="tel" id="dPhone" name="phone" autocomplete="tel">
+            <p class="err" data-err="phone"></p>
+          </div>
+        </div>
+        <div class="row2">
+          <div>
+            <label for="dCity">City</label>
+            <input type="text" id="dCity" name="city" autocomplete="address-level2">
+            <p class="err" data-err="city"></p>
+          </div>
+          <div>
+            <label for="dArea">Area or landmark</label>
+            <input type="text" id="dArea" name="area" autocomplete="off">
+            <p class="err" data-err="area"></p>
+          </div>
+        </div>
+        <div>
+          <label for="dLast">Last donation date (leave empty if never)</label>
+          <input type="date" id="dLast" name="last">
+          <p class="err" data-err="last"></p>
+        </div>
+        <label class="check"><input type="checkbox" name="available" checked> I’m available to donate when contacted</label>
+        <div>
+          <label class="check"><input type="checkbox" name="consent"> I agree to show my name, phone number and area to people looking for blood.</label>
+          <p class="err" data-err="consent"></p>
+        </div>
+        <button class="btn primary" type="submit">Register as donor</button>
+      </form>
 
-        <div id="result"></div>
+      <div>
+        <details open>
+          <summary>Can I donate today?</summary>
+          <form id="eligForm" class="elig-form" style="display:grid;gap:12px;margin-top:12px" novalidate>
+            <div class="row2">
+              <div><label for="eAge">Age</label><input type="number" id="eAge" min="1" max="120"></div>
+              <div><label for="eWeight">Weight (kg)</label><input type="number" id="eWeight" min="1" max="250"></div>
+            </div>
+            <label class="check"><input type="checkbox" id="eWell"> I feel healthy today, with no fever or infection</label>
+            <label class="check"><input type="checkbox" id="eGap"> I haven’t donated blood in the last 3 months</label>
+            <label class="check"><input type="checkbox" id="eInk"> No tattoo, piercing or surgery in the last 6 months</label>
+            <button class="btn quiet" type="submit">Check</button>
+            <p class="elig-result" id="eligResult" aria-live="polite"></p>
+            <p class="hint">General guidelines only. The doctor at the donation site makes the final decision.</p>
+          </form>
+        </details>
+      </div>
+    </div>
+  </div>
+</section>
 
-    </section>
+<section class="block" id="save-life">
+  <div class="wrap">
+    <div class="head">
+      <h2>One donation can reach more than one person</h2>
+    </div>
+    <div class="life">
+      <div>
+        <h3>Why regular donors matter</h3>
+        <p>Whole blood is separated into red cells, platelets and plasma, so a single donation can help up to three patients.</p>
+        <p>Blood doesn’t keep for long. Red cells last about six weeks and platelets only about a week, so hospitals need steady donors rather than one-off drives.</p>
+        <p>Most healthy adults can give whole blood every three months. LifeDrop marks you as ready again 90 days after your last donation.</p>
+        <div class="elig">
+          <details><summary>“Donating makes you weak.”</summary><p>Most healthy adults feel fine after resting and having a drink and a snack. The body replaces the fluid within a day and the red cells within a few weeks.</p></details>
+          <details><summary>“Needles can spread infection.”</summary><p>Donation kits are sterile and used only once.</p></details>
+          <details><summary>“My blood group isn’t needed.”</summary><p>Every group is needed. Rarer groups such as O negative and AB negative are often the hardest to find in an emergency.</p></details>
+        </div>
+      </div>
+      <div>
+        <h3>What happens when you donate</h3>
+        <ol class="steps">
+          <li><div><b>Register and answer a few questions</b>A short health questionnaire and photo ID.</div></li>
+          <li><div><b>Quick health check</b>Pulse, blood pressure and haemoglobin.</div></li>
+          <li><div><b>Donate</b>The donation takes about 10 minutes.</div></li>
+          <li><div><b>Rest and refresh</b>Have a drink and a snack, and take it easy for the rest of the day.</div></li>
+        </ol>
+        <div style="margin-top:24px"><a class="btn primary" href="#register">Register as a donor</a></div>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
 
+<footer>
+  <div class="wrap">
+    <p>LifeDrop is a student mini project. Donors and requests are stored only in this browser, and entries marked “Sample” are fictional. In an emergency, contact a licensed blood bank or hospital.</p>
+    <button class="btn ghost sm" id="resetBtn" type="button">Reset sample data</button>
+  </div>
+</footer>
 
-    <!-- Become Donor -->
-    <section id="donate" class="donate-section">
+<div id="toast" role="status" aria-live="polite"></div>
 
-        <h2>Become a Blood Donor</h2>
-
-        <p>
-            Register yourself as a donor and help someone in need.
-        </p>
-
-        <button>Register as Donor</button>
-
-    </section>
-
-
-    <!-- Blood Request -->
-    <section id="request" class="request-section">
-
-        <h2>Emergency Blood Request</h2>
-
-        <p>
-            Need blood urgently? Submit a blood request.
-        </p>
-
-        <button>Request Blood</button>
-
-    </section>
-
-
-    <!-- Footer -->
-    <footer>
-
-        <p>
-            © 2026 BloodConnect | Blood Donor Finder
-        </p>
-
-    </footer>
-
-
-    <script src="script.js"></script>
-
+<script src="script.js"></script>
 </body>
 </html>
