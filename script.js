@@ -346,12 +346,24 @@ $('#regForm').addEventListener('submit', async e => {
 
   if (Object.keys(errs).length) return;
 
-  // Save donor to Supabase (supports both 'donors' and 'doners' table names)
-  const donorPayload = {
+  // Save donor to Supabase
+  const payloadDoners = {
+    name: name,
+    'blood group': group,
+    phone: phone,
+    age: age,
+    city: city,
+    latitude: null,
+    longitude: null,
+    'last donation date': last || null,
+    available: available
+  };
+
+  const payloadDonors = {
     name: name,
     blood_group: group,
-    age: age,
     phone: phone,
+    age: age,
     city: city,
     latitude: null,
     longitude: null,
@@ -359,40 +371,45 @@ $('#regForm').addEventListener('submit', async e => {
     available: available
   };
 
-  let { data, error } = await supabase
-    .from('donors')
-    .insert(donorPayload)
+  let res = await supabase
+    .from('doners')
+    .insert(payloadDoners)
     .select()
     .single();
 
-  if (error && (error.code === 'PGRST205' || (error.message && error.message.includes('donors')))) {
-    const fallback = await supabase
-      .from('doners')
-      .insert(donorPayload)
+  if (res.error) {
+    // Fallback to 'donors' table if 'doners' fails
+    const fb = await supabase
+      .from('donors')
+      .insert(payloadDonors)
       .select()
       .single();
-    data = fallback.data;
-    error = fallback.error;
+    if (!fb.error) res = fb;
   }
+
+  const { data, error } = res;
 
   if (error) {
     console.error('Donor insert error:', error);
-    toast('Donor could not be saved. Check database connection.');
+    toast('Donor could not be saved: ' + (error.message || 'Check database'));
     return;
   }
 
   // Also keep it in the current app state
   const d = {
-    id: data.donor_id || data.id,
+    id: data.donar_id || data.donor_id || data.id,
     name: data.name,
     age: data.age,
     gender: f.get('gender'),
-    group: data.blood_group,
+    group: data['blood group'] || data.blood_group || group,
     phone: data.phone,
     city: data.city,
     area: area,
-    last: data.last_donation_date || '',
-    available: data.available,
+    last: data['last donation date'] || data.last_donation_date || '',
+    available: data.available !== false,
+    sample: false,
+    mine: true
+  };
     sample: false,
     mine: true
   };
@@ -454,8 +471,21 @@ $('#reqForm').addEventListener('submit', async e => {
 
   if (Object.keys(errs).length) return;
 
-  // Save request to Supabase (supports both 'blood_requests' and 'blood_request')
-  const reqPayload = {
+  // Save request to Supabase
+  const payloadBloodRequest = {
+    Paitent_name: patient,
+    blood_group_neede: group,
+    units_needed: units,
+    location: city,
+    city: city,
+    latitude: null,
+    longitude: null,
+    contact: phone,
+    status: 'Pending',
+    hospital: hospital
+  };
+
+  const payloadBloodRequests = {
     patient_name: patient,
     blood_group_needs: group,
     unit_needs: units,
@@ -468,21 +498,22 @@ $('#reqForm').addEventListener('submit', async e => {
     hospital: hospital
   };
 
-  let { data, error } = await supabase
-    .from('blood_requests')
-    .insert(reqPayload)
+  let resReq = await supabase
+    .from('blood_request')
+    .insert(payloadBloodRequest)
     .select()
     .single();
 
-  if (error && (error.code === 'PGRST205' || (error.message && error.message.includes('blood_requests')))) {
-    const fallback = await supabase
-      .from('blood_request')
-      .insert(reqPayload)
+  if (resReq.error) {
+    const fbReq = await supabase
+      .from('blood_requests')
+      .insert(payloadBloodRequests)
       .select()
       .single();
-    data = fallback.data;
-    error = fallback.error;
+    if (!fbReq.error) resReq = fbReq;
   }
+
+  const { data, error } = resReq;
 
   if (error) {
     console.error('Blood request insert error:', error);
@@ -493,12 +524,12 @@ $('#reqForm').addEventListener('submit', async e => {
   // Add to current app state
   const r = {
     id: data.request_id || data.id,
-    patient: data.patient_name,
-    group: data.blood_group_needs,
-    units: data.unit_needs,
-    hospital: data.hospital,
-    city: data.city,
-    phone: data.contact,
+    patient: data.Paitent_name || data.patient_name || patient,
+    group: data.blood_group_neede || data.blood_group_needs || group,
+    units: data.units_needed || data.unit_needs || units,
+    hospital: data.hospital || hospital,
+    city: data.city || city,
+    phone: data.contact || phone,
     urgency: urgency,
     note: note,
     created: data.created_at
@@ -564,15 +595,15 @@ async function syncWithSupabase(){
 
     if(dbDonors && dbDonors.length){
       const fetched = dbDonors.map(d=>({
-        id: d.donor_id || d.id,
+        id: d.donar_id || d.donor_id || d.id,
         name: d.name,
         age: d.age,
         gender: d.gender || 'Any',
-        group: d.blood_group,
+        group: d['blood group'] || d.blood_group,
         phone: d.phone,
         city: d.city,
         area: d.area || d.location || d.city,
-        last: d.last_donation_date || '',
+        last: d['last donation date'] || d.last_donation_date || '',
         available: d.available !== false,
         sample: false,
         mine: false
@@ -599,20 +630,19 @@ async function syncWithSupabase(){
   try{
     let { data: dbReqs, error: rErr } = await supabase
       .from('blood_requests')
-      .select('*')
-      .order('created_at', { ascending: false });
+      .select('*');
 
     if(rErr && (rErr.code === 'PGRST205' || (rErr.message && rErr.message.includes('blood_requests')))){
-      const res = await supabase.from('blood_request').select('*').order('created_at', { ascending: false });
+      const res = await supabase.from('blood_request').select('*');
       dbReqs = res.data;
     }
 
     if(dbReqs && dbReqs.length){
       const fetchedR = dbReqs.map(r=>({
         id: r.request_id || r.id,
-        patient: r.patient_name,
-        group: r.blood_group_needs,
-        units: r.unit_needs,
+        patient: r.Paitent_name || r.patient_name,
+        group: r.blood_group_neede || r.blood_group_needs,
+        units: r.units_needed || r.unit_needs,
         hospital: r.hospital || '',
         city: r.city || r.location || '',
         phone: r.contact,
