@@ -410,9 +410,6 @@ $('#regForm').addEventListener('submit', async e => {
     sample: false,
     mine: true
   };
-    sample: false,
-    mine: true
-  };
 
   state.donors.push(d);
   newId = d.id;
