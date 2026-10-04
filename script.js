@@ -309,47 +309,209 @@ function showErrors(form,errs){
 }
 const okPhone=p=>{const n=p.replace(/\D/g,'').length;return n>=7&&n<=15;};
 
-$('#regForm').addEventListener('submit',e=>{
+$('#regForm').addEventListener('submit', async e => {
   e.preventDefault();
-  const form=e.currentTarget,f=new FormData(form),errs={};
-  const name=(f.get('name')||'').trim(),age=Number(f.get('age')),group=f.get('group'),phone=(f.get('phone')||'').trim();
-  const city=(f.get('city')||'').trim(),area=(f.get('area')||'').trim(),last=f.get('last')||'';
-  if(name.length<2)errs.name='Enter your full name.';
-  if(!Number.isInteger(age)||age<18||age>65)errs.age='Donors must be between 18 and 65 years old.';
-  if(!GROUPS.includes(group))errs.group='Choose your blood group.';
-  if(!okPhone(phone))errs.phone='Enter a valid phone number (7 to 15 digits).';
-  if(!city)errs.city='Enter your city.';
-  if(!area)errs.area='Enter your area or a nearby landmark.';
-  if(last&&parseISO(last)>parseISO(todayISO()))errs.last='The last donation date can’t be in the future.';
-  if(!f.get('consent'))errs.consent='Tick the box to confirm you agree.';
-  showErrors(form,errs);
-  if(Object.keys(errs).length)return;
-  const d={id:uid(),name,age,gender:f.get('gender'),group,phone,city,area,last,available:!!f.get('available'),sample:false,mine:true};
-  state.donors.push(d);newId=d.id;save();
-  form.reset();$('#dLast').max=todayISO();
+
+  const form = e.currentTarget;
+  const f = new FormData(form);
+  const errs = {};
+
+  const name = (f.get('name') || '').trim();
+  const age = Number(f.get('age'));
+  const group = f.get('group');
+  const phone = (f.get('phone') || '').trim();
+  const city = (f.get('city') || '').trim();
+  const area = (f.get('area') || '').trim();
+  const last = f.get('last') || '';
+  const available = !!f.get('available');
+
+  // Validation
+  if (name.length < 2) errs.name = 'Enter your full name.';
+  if (!Number.isInteger(age) || age < 18 || age > 65)
+    errs.age = 'Donors must be between 18 and 65 years old.';
+  if (!GROUPS.includes(group))
+    errs.group = 'Choose your blood group.';
+  if (!okPhone(phone))
+    errs.phone = 'Enter a valid phone number.';
+  if (!city)
+    errs.city = 'Enter your city.';
+  if (!area)
+    errs.area = 'Enter your area or nearby landmark.';
+  if (last && parseISO(last) > parseISO(todayISO()))
+    errs.last = 'The last donation date can’t be in the future.';
+  if (!f.get('consent'))
+    errs.consent = 'Tick the box to confirm you agree.';
+
+  showErrors(form, errs);
+
+  if (Object.keys(errs).length) return;
+
+  // Save donor to Supabase (supports both 'donors' and 'doners' table names)
+  const donorPayload = {
+    name: name,
+    blood_group: group,
+    age: age,
+    phone: phone,
+    city: city,
+    latitude: null,
+    longitude: null,
+    last_donation_date: last || null,
+    available: available
+  };
+
+  let { data, error } = await supabase
+    .from('donors')
+    .insert(donorPayload)
+    .select()
+    .single();
+
+  if (error && (error.code === 'PGRST205' || (error.message && error.message.includes('donors')))) {
+    const fallback = await supabase
+      .from('doners')
+      .insert(donorPayload)
+      .select()
+      .single();
+    data = fallback.data;
+    error = fallback.error;
+  }
+
+  if (error) {
+    console.error('Donor insert error:', error);
+    toast('Donor could not be saved. Check database connection.');
+    return;
+  }
+
+  // Also keep it in the current app state
+  const d = {
+    id: data.donor_id || data.id,
+    name: data.name,
+    age: data.age,
+    gender: f.get('gender'),
+    group: data.blood_group,
+    phone: data.phone,
+    city: data.city,
+    area: area,
+    last: data.last_donation_date || '',
+    available: data.available,
+    sample: false,
+    mine: true
+  };
+
+  state.donors.push(d);
+  newId = d.id;
+
+  save();
+  form.reset();
+  $('#dLast').max = todayISO();
+
   renderAll();
-  showDonors({ready:isReady(d)});
-  toast(isReady(d)?'You’re registered and now visible to people searching for blood.':`You’re registered. You’ll show as ready from ${fmtDate(readyAgainOn(d)||todayISO())}.`);
+
+  showDonors({
+    group: d.group,
+    city: d.city,
+    ready: isReady(d)
+  });
+
+  toast('Donor registered successfully! 🩸');
 });
 
-$('#reqForm').addEventListener('submit',e=>{
+$('#reqForm').addEventListener('submit', async e => {
   e.preventDefault();
-  const form=e.currentTarget,f=new FormData(form),errs={};
-  const patient=(f.get('patient')||'').trim(),group=f.get('group'),units=Number(f.get('units'));
-  const hospital=(f.get('hospital')||'').trim(),city=(f.get('city')||'').trim(),phone=(f.get('phone')||'').trim();
-  if(patient.length<2)errs.patient='Enter the patient’s name.';
-  if(!GROUPS.includes(group))errs.group='Choose a blood group.';
-  if(!Number.isInteger(units)||units<1||units>20)errs.units='Enter 1 to 20 units.';
-  if(!hospital)errs.hospital='Enter the hospital name.';
-  if(!city)errs.city='Enter the city.';
-  if(!okPhone(phone))errs.phone='Enter a valid contact number.';
-  showErrors(form,errs);
-  if(Object.keys(errs).length)return;
-  state.requests.push({id:uid(),patient,group,units,hospital,city,phone,urgency:f.get('urgency'),note:(f.get('note')||'').trim(),created:Date.now(),fulfilled:false,sample:false,mine:true});
-  save();form.reset();$('#rqUnits').value=1;$('#rqUrgency').value='today';
+
+  const form = e.currentTarget;
+  const f = new FormData(form);
+  const errs = {};
+
+  const patient = (f.get('patient') || '').trim();
+  const group = f.get('group');
+  const units = Number(f.get('units'));
+  const hospital = (f.get('hospital') || '').trim();
+  const city = (f.get('city') || '').trim();
+  const phone = (f.get('phone') || '').trim();
+  const urgency = f.get('urgency');
+  const note = (f.get('note') || '').trim();
+
+  // Validation
+  if (patient.length < 2)
+    errs.patient = 'Enter the patient’s name.';
+
+  if (!GROUPS.includes(group))
+    errs.group = 'Choose a blood group.';
+
+  if (!Number.isInteger(units) || units < 1 || units > 20)
+    errs.units = 'Enter 1 to 20 units.';
+
+  if (!hospital)
+    errs.hospital = 'Enter the hospital name.';
+
+  if (!city)
+    errs.city = 'Enter the city.';
+
+  if (!okPhone(phone))
+    errs.phone = 'Enter a valid contact number.';
+
+  showErrors(form, errs);
+
+  if (Object.keys(errs).length) return;
+
+  // Save request to Supabase
+  const { data, error } = await supabase
+    .from('blood_requests')
+    .insert({
+      patient_name: patient,
+      blood_group_needs: group,
+      unit_needs: units,
+      location: city,
+      city: city,
+      latitude: null,
+      longitude: null,
+      contact: phone,
+      status: 'Pending',
+      hospital: hospital
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Blood request insert error:', error);
+    toast('Blood request could not be saved.');
+    return;
+  }
+
+  // Add to current app state
+  const r = {
+    id: data.request_id || data.id,
+    patient: data.patient_name,
+    group: data.blood_group_needs,
+    units: data.unit_needs,
+    hospital: data.hospital,
+    city: data.city,
+    phone: data.contact,
+    urgency: urgency,
+    note: note,
+    created: data.created_at
+      ? new Date(data.created_at).getTime()
+      : Date.now(),
+    fulfilled: false,
+    sample: false,
+    mine: true
+  };
+
+  state.requests.push(r);
+
+  save();
+  form.reset();
+
+  $('#rqUnits').value = 1;
+  $('#rqUrgency').value = 'today';
+
   renderAll();
-  const n=matchDonors(group,city).length;
-  toast(`Request posted. ${n} compatible donor${n===1?'':'s'} ready in ${city}.`);
+
+  const n = matchDonors(group, city).length;
+
+  toast(
+    `Blood request posted successfully. ${n} compatible donor${n === 1 ? '' : 's'} ready in ${city}.`
+  );
 });
 
 $('#eligForm').addEventListener('submit',e=>{
@@ -373,7 +535,98 @@ $('#resetBtn').addEventListener('click',e=>{
 });
 
 /* ---------- init ---------- */
+async function syncWithSupabase(){
+  if(typeof supabase==='undefined'||!supabase)return;
+
+  // 1. Fetch Donors from Supabase
+  try{
+    let { data: dbDonors, error: dErr } = await supabase
+      .from('donors')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if(dErr && (dErr.code === 'PGRST205' || (dErr.message && dErr.message.includes('donors')))){
+      const res = await supabase.from('doners').select('*').order('created_at', { ascending: false });
+      dbDonors = res.data;
+    }
+
+    if(dbDonors && dbDonors.length){
+      const fetched = dbDonors.map(d=>({
+        id: d.donor_id || d.id,
+        name: d.name,
+        age: d.age,
+        gender: d.gender || 'Any',
+        group: d.blood_group,
+        phone: d.phone,
+        city: d.city,
+        area: d.area || d.location || d.city,
+        last: d.last_donation_date || '',
+        available: d.available !== false,
+        sample: false,
+        mine: false
+      }));
+
+      const existing = new Set(state.donors.map(x=>String(x.id)));
+      let added = false;
+      fetched.forEach(f=>{
+        if(!existing.has(String(f.id))){
+          state.donors.unshift(f);
+          added = true;
+        }
+      });
+      if(added){
+        save();
+        renderAll();
+      }
+    }
+  }catch(e){
+    console.warn('Supabase donor sync:', e);
+  }
+
+  // 2. Fetch Blood Requests from Supabase
+  try{
+    const { data: dbReqs, error: rErr } = await supabase
+      .from('blood_requests')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if(dbReqs && dbReqs.length){
+      const fetchedR = dbReqs.map(r=>({
+        id: r.request_id || r.id,
+        patient: r.patient_name,
+        group: r.blood_group_needs,
+        units: r.unit_needs,
+        hospital: r.hospital || '',
+        city: r.city || r.location || '',
+        phone: r.contact,
+        urgency: r.urgency || 'today',
+        note: r.note || '',
+        created: r.created_at ? new Date(r.created_at).getTime() : Date.now(),
+        fulfilled: r.status === 'Fulfilled',
+        sample: false,
+        mine: false
+      }));
+
+      const existingR = new Set(state.requests.map(x=>String(x.id)));
+      let addedR = false;
+      fetchedR.forEach(f=>{
+        if(!existingR.has(String(f.id))){
+          state.requests.unshift(f);
+          addedR = true;
+        }
+      });
+      if(addedR){
+        save();
+        renderAll();
+      }
+    }
+  }catch(e){
+    console.warn('Supabase request sync:', e);
+  }
+}
+
 function renderAll(){renderStats();renderStock();renderDonors();renderRequests();}
 renderHero(false);
 renderAll();
+syncWithSupabase();
 })();
