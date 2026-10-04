@@ -454,27 +454,39 @@ $('#reqForm').addEventListener('submit', async e => {
 
   if (Object.keys(errs).length) return;
 
-  // Save request to Supabase
-  const { data, error } = await supabase
+  // Save request to Supabase (supports both 'blood_requests' and 'blood_request')
+  const reqPayload = {
+    patient_name: patient,
+    blood_group_needs: group,
+    unit_needs: units,
+    location: city,
+    city: city,
+    latitude: null,
+    longitude: null,
+    contact: phone,
+    status: 'Pending',
+    hospital: hospital
+  };
+
+  let { data, error } = await supabase
     .from('blood_requests')
-    .insert({
-      patient_name: patient,
-      blood_group_needs: group,
-      unit_needs: units,
-      location: city,
-      city: city,
-      latitude: null,
-      longitude: null,
-      contact: phone,
-      status: 'Pending',
-      hospital: hospital
-    })
+    .insert(reqPayload)
     .select()
     .single();
 
+  if (error && (error.code === 'PGRST205' || (error.message && error.message.includes('blood_requests')))) {
+    const fallback = await supabase
+      .from('blood_request')
+      .insert(reqPayload)
+      .select()
+      .single();
+    data = fallback.data;
+    error = fallback.error;
+  }
+
   if (error) {
     console.error('Blood request insert error:', error);
-    toast('Blood request could not be saved.');
+    toast('Blood request could not be saved: ' + (error.message || 'Check database'));
     return;
   }
 
@@ -585,10 +597,15 @@ async function syncWithSupabase(){
 
   // 2. Fetch Blood Requests from Supabase
   try{
-    const { data: dbReqs, error: rErr } = await supabase
+    let { data: dbReqs, error: rErr } = await supabase
       .from('blood_requests')
       .select('*')
       .order('created_at', { ascending: false });
+
+    if(rErr && (rErr.code === 'PGRST205' || (rErr.message && rErr.message.includes('blood_requests')))){
+      const res = await supabase.from('blood_request').select('*').order('created_at', { ascending: false });
+      dbReqs = res.data;
+    }
 
     if(dbReqs && dbReqs.length){
       const fetchedR = dbReqs.map(r=>({
